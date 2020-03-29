@@ -1,0 +1,213 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"
+		   integrity="sha512-Rksm5RenBEKSKFjgI3a41vrjkw4EVPlJ3+OiI65vTjIdo9brlAacEuKOiQ5OFh7cOI1bkDwLqdLw3Zg0cRJAAQ=="
+		   crossorigin=""/>
+		<script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"
+		   integrity="sha512-/Nsx9X4HebavoBvEBuyp3I7od5tA0UzAxs+j83KgC8PU0kgB4XiK4Lfe4y4cgBtaRJQEIFCW+oC506aPT2L1zw=="
+		   crossorigin=""></script>
+		<script src='https://unpkg.com/leaflet-image@latest/leaflet-image.js'></script>
+		<script src='https://cdn.jsdelivr.net/gh/bbecquet/Leaflet.RotatedMarker/leaflet.rotatedMarker.js'></script>
+		<script src='https://cdn.jsdelivr.net/gh/turban/Leaflet.Graticule/L.Graticule.js'></script>
+		<!--script src='https://cdn.jsdelivr.net/gh/A1rPun/Leaflet.pattern/dist/leaflet.pattern.js'></script-->
+		<!--script src='https://teastman.github.io/Leaflet.pattern/leaflet.pattern.js'></script-->
+		<script src='https://npmcdn.com/@turf/turf/turf.min.js'></script>
+		<script src=https://unpkg.com/papaparse@latest/papaparse.min.js></script>
+		<script src="https://cloudybay.github.io/leaflet.latlng-graticule/leaflet.latlng-graticule.js"></script>
+		<script src="https://cdn.jsdelivr.net/gh/calvinmetcalf/leaflet-ajax/dist/leaflet.ajax.min.js"></script>
+        <style>
+        #mapid{
+            /* height: 480px;*/
+			height: 95%; width: 95%; /*[297, 210] */
+        }
+        #download {
+            position:absolute;
+            top:10px;
+            right:10px;
+            z-index:1000;
+        }
+        #marcador {
+            position:fixed; /*position:absolute;*/
+            top:10px;
+            left:100px;
+            z-index:1000;
+			background:beige; border:3px solid brown; padding:3px; 
+			width:50%; height:20%; overflow: scroll;
+        }
+		.leaflet-popup, .leaflet-popup-content, .leaflet-popup-content p {
+			margin: 0px;
+		}
+		
+        .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+			//background: none; box-shadow: none;
+		}
+        #cover {
+            display: none;
+            text-align: center;
+            padding-top: 200px;
+            background: #CCC;
+            opacity: 0.5;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10000;
+        }
+        
+        #cover.active{
+            display: block;
+        }
+        </style>
+    </head>
+<body>
+        <div id="mapid"></div>
+		<div id="marcador">marcador</div>
+		<script type=text/javascript>
+var poly1 = turf.polygon([[ [-10.0, 45.0], [-5.0, 45.0], [-5.0, 40.0], [-10.0, 40.0], [-10.0, 45.0] ]]);
+var poly2 = turf.polygon([[ [-10.0, 42.0], [-5.0, 42.0], [-5.0, 38.0], [-10.0, 38.0], [-10.0, 42.0] ]]);
+var poly3 = turf.polygon([[ [10.0, 45.0], [5.0, 45.0], [5.0, 40.0], [10.0, 40.0], [10.0, 45.0] ]]);
+function randomsquare(maxlat=70,minlat=35,maxlon=40,minlon=-25,steplat=5,steplon=5) {
+//function randomsquare(maxlat=90,minlat=-90,maxlon=180,minlon=-180) {
+	//var lat=minlat+Math.random()*(maxlat-minlat) , lon=minlon+Math.random()*(maxlon-minlon);
+	//var poly = turf.polygon([[ [-10.0, 45.0], [-5.0, 45.0], [-5.0, 40.0], [-10.0, 40.0], [-10.0, 45.0] ]]);
+	var nstepslat=(maxlat-minlat)/steplat; var nstepslon=(maxlon-minlon)/steplon;
+	var lat=Math.floor(Math.random()*nstepslat)*steplat + minlat;
+	var lon=Math.floor(Math.random()*nstepslon)*steplon + minlon;
+	var poly = turf.polygon([[ [lon, lat], [lon+steplon, lat], [lon+steplon, lat+steplat], [lon, lat+steplat], [lon, lat] ]]);
+	return poly;
+}
+
+function mpintersect(p1,p2) { // https://github.com/Turfjs/turf/issues/1276
+// adaptamos turf.intersect para que poida funcionar tamén con multipolígonos
+	//var inter=null;
+	var inter=Array();
+	var union;
+	//var inter;
+	var mp1= JSON.parse(JSON.stringify(p1));
+	var mp2= JSON.parse(JSON.stringify(p2));
+	if(mp1.geometry.type=="Polygon") {
+		mp1.geometry.type="Multipolygon";
+		mp1.geometry.coordinates=Array(mp1.geometry.coordinates);
+	}
+	if(mp2.geometry.type=="Polygon") {
+		mp2.geometry.type="Multipolygon";
+		mp2.geometry.coordinates=Array(mp2.geometry.coordinates);
+	}
+	//console.log(JSON.stringify(mp1.geometry.coordinates));
+	//console.log(JSON.stringify(mp2.geometry.coordinates));
+	mp1.geometry.coordinates.forEach(function(coords1){
+		var feat1={'type':'Polygon','coordinates':coords1};
+		mp2.geometry.coordinates.forEach(function(coords2){
+			var feat2={'type':'Polygon','coordinates':coords2};
+			var int12=turf.intersect(feat1,feat2);
+			if(int12!==null) {
+				inter.push(int12); 
+				union=turf.union((union==null?int12:union),int12);
+				//inter=turf.union(feat1,feat2);
+				//console.log(inter);
+			}
+		});
+	});
+	return(union);
+	return(inter);
+}
+function mapBboxRect() { // crea un rectángulo geojson cos límites actuais do mapa leaflet
+  var limits=map.getBounds().toBBoxString().split(",");
+  limits.forEach(function(v,k) {v=parseInt(v)});
+  var poly=turf.bboxPolygon(limits);
+  return(poly);
+}
+var casilla;
+function lanzapregunta() {
+	var poly=randomsquare(); 
+	var match=false;
+	paises.toGeoJSON().features.forEach(function(f,n) {
+		var inter=mpintersect(poly,f);
+		if(inter) {
+			console.log(n,f.properties.NAME_ES,inter);
+			match=true; // existen países nesa cuadrícula aleatoria
+		}
+	});
+	if(match && mpintersect(poly,mapBboxRect())) { // existen países na cuadrícula, e ademáis esta cae dentro dos límites actuais do mapa 
+		console.log("cuadrante: " + JSON.stringify(poly.geometry.coordinates));
+		if(map.hasLayer(casilla)) map.removeLayer(casilla);
+		casilla = L.geoJSON(poly).addTo(map);
+	} else {
+		console.log("agua !!");
+		lanzapregunta();
+	}
+}
+
+			var bounds = ([[71.5, 50.0],[27.5, -25.0]]);
+			var map = L.map('mapid',{maxBounds: bounds, preferCanvas: true});//.setView([42.763, -8.02], 8);
+			map.setView([49.5, 12.5], 5);
+			var tilelayer=L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+				attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+				maxZoom: 18
+			}).addTo(map);
+			L.graticule({ interval: 5 }).addTo(map);
+			L.latlngGraticule({
+				showLabel: true,
+				dashArray: [5, 5],
+				color: "red",
+				zoomInterval: [
+					{start: 2, end: 3, interval: 30},
+					{start: 4, end: 4, interval: 10},
+					{start: 5, end: 7, interval: 2.5},
+					{start: 8, end: 10, interval: 1}
+				]
+			}).addTo(map);
+			var paises = new L.GeoJSON.AJAX('../../leaflet_GIS/datos/ne_50m_admin_0_countries.json', {
+				onEachFeature: etiquetaGeojsonFeatures,
+				filter: filtrar,
+				style: estilo
+			}).addTo(map);
+			//cargarGeojson('../../leaflet_GIS/datos/ne_50m_admin_0_countries.json');
+			function etiquetaGeojsonFeatures(feature, layer) {
+				// does this feature have a property named popupContent?
+				if (feature.properties && feature.properties.NAME_ES) {
+					layer.bindPopup(feature.properties.NAME_ES);
+				}
+			}
+			function estilo(feature, layer) {
+				var colors=["blue","yellow","black","red","brown","orange","grey","cyan","magenta","green","white","purple","pink"];
+				var continentes=["Europe","Asia","Africa","North America","South America","Oceania","","","","",]
+				var fc;
+				fc = '#' + Math.random().toString(16).slice(2, 8).toUpperCase();
+				fc = colors[ parseInt( Math.random() * colors.length ) ];
+				var bc = continentes.indexOf(feature.properties.CONTINENT);
+				bc = bc<0?6:bc;
+				return {fillColor: fc, color: colors[bc] };
+				switch (feature.properties.party) {
+					case 'Republican': return {color: "#ff0000"};
+					case 'Democrat':   return {color: "#0000ff"};
+				}
+			}
+			function filtrar(feature, layer) {
+				//return true;
+				return (feature.properties.CONTINENT=="Europe"
+				|| (feature.properties.CONTINENT=="Africa" && turf.center(feature).geometry.coordinates[1]>20)
+				|| (feature.properties.CONTINENT=="Asia" && turf.center(feature).geometry.coordinates[0]<60)
+				);
+			}
+			function cargarGeojson(filename) {
+				// https://gis.stackexchange.com/questions/68489/loading-external-geojson-file-into-leaflet-map
+				let xhr = new XMLHttpRequest();
+				xhr.open('GET', filename);
+				xhr.setRequestHeader('Content-Type', 'application/json');
+				xhr.responseType = 'json';
+				xhr.onload = function() {
+					if (xhr.status !== 200) return
+					L.geoJSON(xhr.response, {
+						onEachFeature: etiquetaGeojsonFeatures,
+						filter: filtrar,
+						style: estilo
+					}).addTo(map);
+				};
+				xhr.send();
+			}
+		</script>
+</body>
+</html>​
