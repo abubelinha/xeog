@@ -159,7 +159,8 @@ function lanzapregunta() {
 					{start: 8, end: 10, interval: 1}
 				]
 			}).addTo(map);
-			var paises = new L.GeoJSON.AJAX('../../leaflet_GIS/datos/ne_50m_admin_0_countries.json', {
+			//var paises = new L.GeoJSON.AJAX('../../leaflet_GIS/datos/ne_50m_admin_0_countries.json', {
+			var paises = new L.GeoJSON.AJAX('./geojson/ne_50m_admin_0_countries.json', {
 				onEachFeature: etiquetaGeojsonFeatures,
 				filter: filtrar,
 				style: estilo
