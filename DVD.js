@@ -33,7 +33,7 @@ function mpintersect(p1,p2) { // https://github.com/Turfjs/turf/issues/1276
 	return(union);
 	return(inter);
 }
-function randomsquare(maxlat=70,minlat=35,maxlon=40,minlon=-25,steplat=5,steplon=5) {
+function randomsquare_old(maxlat=70,minlat=35,maxlon=40,minlon=-25,steplat=5,steplon=5) {
 /* xenera un polígono geojson aleatorio que encaixa nunha grid predefinida */
 //function randomsquare(maxlat=90,minlat=-90,maxlon=180,minlon=-180) {
 	//var lat=minlat+Math.random()*(maxlat-minlat) , lon=minlon+Math.random()*(maxlon-minlon);
@@ -41,6 +41,26 @@ function randomsquare(maxlat=70,minlat=35,maxlon=40,minlon=-25,steplat=5,steplon
 	var nstepslat=(maxlat-minlat)/steplat; var nstepslon=(maxlon-minlon)/steplon;
 	var lat=Math.floor(Math.random()*nstepslat)*steplat + minlat;
 	var lon=Math.floor(Math.random()*nstepslon)*steplon + minlon;
+	var poly = turf.polygon([[ [lon, lat], [lon+steplon, lat], [lon+steplon, lat+steplat], [lon, lat+steplat], [lon, lat] ]]);
+	return poly;
+}
+function randomsquare(map=null, maxlat=70,minlat=35,maxlon=40,minlon=-25,steplat=5,steplon=5) {
+/* xenera un polígono geojson aleatorio que encaixa nunha grid predefinida */
+//function randomsquare(maxlat=90,minlat=-90,maxlon=180,minlon=-180) {
+	//var lat=minlat+Math.random()*(maxlat-minlat) , lon=minlon+Math.random()*(maxlon-minlon);
+	//var poly = turf.polygon([[ [-10.0, 45.0], [-5.0, 45.0], [-5.0, 40.0], [-10.0, 40.0], [-10.0, 45.0] ]]);
+	var nstepslat=(maxlat-minlat)/steplat; var nstepslon=(maxlon-minlon)/steplon;
+	var bucle=true;
+	while(bucle) {
+		var lat=Math.floor(Math.random()*nstepslat)*steplat + minlat;
+		var lon=Math.floor(Math.random()*nstepslon)*steplon + minlon;
+		if(typeof map !== null) {
+			// intersect de lat/lon +- steplat/lon con mapBboxRect();
+			bucle=false;
+		} else {
+			bucle=false;
+		}
+	}
 	var poly = turf.polygon([[ [lon, lat], [lon+steplon, lat], [lon+steplon, lat+steplat], [lon, lat+steplat], [lon, lat] ]]);
 	return poly;
 }
